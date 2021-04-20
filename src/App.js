@@ -1,6 +1,7 @@
 import React, { Component, Suspense } from "react";
-import { BrowserRouter as Router , Route, Switch } from "react-router-dom";
-import { MainComponents } from "./components";
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
+import { MainComponents, ProductComponent } from "./components";
+import "./stylesheet/global.scss";
 class App extends Component {
   constructor() {
     super();
@@ -15,7 +16,7 @@ class App extends Component {
           <Router>
             <Switch>
               <Route exact path="/" component={MainComponents} />
-              <Route exact path="/products" component={MainComponents} />
+              <Route exact path="/products" component={ProductComponent} />
             </Switch>
           </Router>
         </Suspense>
