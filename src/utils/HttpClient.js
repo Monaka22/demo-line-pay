@@ -10,7 +10,7 @@ axios.interceptors.request.use(async (config) => {
     if (process.env.REACT_APP_API_HTTP_DEV === 'true') {
       config.url = join(config.url);
     } else {
-      config.url = join(`http://localhost:5001/dowho-line-pay/us-central1/app`, config.url);
+      config.url = join(`${process.env.REACT_APP_API_HTTP}` , config.url);
     }
   }
   // config.timeout = 15000; // 15 Second

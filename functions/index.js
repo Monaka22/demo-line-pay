@@ -49,39 +49,39 @@ exports.webhook = functions.region("asia-east2").https.onRequest((req, res) => {
   var payload = [];
   if (lah.eventtype() === "postback") {
     const pathUrl = "/v3/payments/request";
-    body = {
+    const body = {
       amount: 250,
       currency: "THB",
-      orderId: nonce + "B",
+      orderId: nonce,
       packages: [
         {
-          id: nonce + "A",
+          id: nonce,
           amount: 250,
           name: "Dreamcatcher Package",
           products: [
             {
-              name: "ตุ๊กตา Cony",
+              name: "ตาข่ายดักฝันรุ่น 1",
               quantity: 1,
               price: 100,
               imageUrl:
-                "https://firebasestorage.googleapis.com/v0/b/linedeveloper-63341.appspot.com/o/512x512bb.jpg?alt=media&token=7cfd10b0-6d01-4612-b42e-b1b4d0105acd",
+                "https://firebasestorage.googleapis.com/v0/b/dowho-line-pay.appspot.com/o/watercolor-dreamcatcher-with-flowers_45050-130.jpg?alt=media",
             },
             {
-              name: "ตุ๊กตา Sally",
+              name: "ตาข่ายดักฝันรุ่นที่ 2",
               quantity: 1,
               price: 150,
               imageUrl:
-                "https://firebasestorage.googleapis.com/v0/b/linedeveloper-63341.appspot.com/o/8cd724371a6f169b977684fd69cc2339.jpg?alt=media&token=e2008ff7-1cad-4476-a2e4-cda5f8af6561",
+                "https://firebasestorage.googleapis.com/v0/b/dowho-line-pay.appspot.com/o/b6b7c0478ba187e57082991f2ba3ca01.png?alt=media",
             },
           ],
         },
       ],
       redirectUrls: {
         confirmUrl:
-          "https://0c1f44a56d0a.ngrok.io/dowho-line-pay/asia-east2/confirmOrder?userID=" +
+          "https://dd75340d5ef5.ngrok.io/dowho-line-pay/asia-east2/confirmOrder?userID=" +
           lah.userId(),
         cancelUrl:
-          "https://0c1f44a56d0a.ngrok.io/dowho-line-pay/asia-east2/confirmOrder",
+          "https://dd75340d5ef5.ngrok.io/dowho-line-pay/asia-east2/confirmOrder",
       },
     };
     var header = genHeader(channelId, channelSecret, pathUrl, body, nonce);
@@ -138,125 +138,108 @@ exports.webhook = functions.region("asia-east2").https.onRequest((req, res) => {
 });
 
 exports.confirmOrder = functions.https.onRequest((req, res) => {
-    console.log(req.query.transactionId);
-    if (typeof req.query.userID === "undefined") {
-      return res.send("You cancled the payment");
-    } else {
-      const transactionId = req.query.transactionId;
-      const userId = req.query.userID;
-      var pathUrl = `/v3/payments/${transactionId}/confirm`;
-      var body = {
-        amount: 250,
-        currency: "THB"
-      };
-      var header = genHeader(channelId, channelSecret, pathUrl, body, nonce);
-      return request({
-        uri: `${baseUrl}${pathUrl}`,
-        method: "POST",
-        headers: header,
-        body: JSON.stringify(body)
-      })
-        .then(data => {
-          var jsondata = JSON.parse(data);
-          if (jsondata.returnCode === "0000") {
-            var payload = [
-              {
-                type: "text",
-                text: "การชำระเงินเสร็จสมบูรณ์ ขอบคุณที่ใช้บริการ T Store"
-              },
-              payloadcreator.receipt()
-            ];
-            return lah.push(userId, payload);
-          } else {
-            var payload = [
-              {
-                type: "text",
-                text: "การชำระเงินไม่สมบูรณ์ ด้วยเหตุผลต่อไปนี้"
-              },
-              {
-                type: "text",
-                text: jsondata.returnMessage
-              }
-            ];
-            return lah.push(userId, payload);
-          }
-        })
-        .then(data => {
-          return res.send(
-            "Successfully to get the data from LINE Pay,Please return to LINE App to see the payment result"
-          );
-        })
-        .catch(e => {
+  console.log(req.query.transactionId);
+  if (typeof req.query.userID === "undefined") {
+    return res.send("You cancled the payment");
+  } else {
+    const transactionId = req.query.transactionId;
+    const userId = req.query.userID;
+    var pathUrl = `/v3/payments/${transactionId}/confirm`;
+    var body = {
+      amount: 250,
+      currency: "THB",
+    };
+    var header = genHeader(channelId, channelSecret, pathUrl, body, nonce);
+    return request({
+      uri: `${baseUrl}${pathUrl}`,
+      method: "POST",
+      headers: header,
+      body: JSON.stringify(body),
+    })
+      .then((data) => {
+        var jsondata = JSON.parse(data);
+        if (jsondata.returnCode === "0000") {
           var payload = [
             {
               type: "text",
-              text: "การชำระเงินไม่สมบูรณ์ ด้วยเหตุผลต่อไปนี้"
+              text:
+                "การชำระเงินเสร็จสมบูรณ์ ขอบคุณที่ใช้บริการ Dreamcatcher Store",
+            },
+            payloadcreator.receipt(),
+          ];
+          return lah.push(userId, payload);
+        } else {
+          const payload = [
+            {
+              type: "text",
+              text: "การชำระเงินไม่สมบูรณ์ ด้วยเหตุผลต่อไปนี้",
             },
             {
               type: "text",
-              text: e
-            }
+              text: jsondata.returnMessage,
+            },
           ];
           return lah.push(userId, payload);
-        });
-    }
-  });
+        }
+      })
+      .then((data) => {
+        return res.send(
+          "Successfully to get the data from LINE Pay,Please return to LINE App to see the payment result"
+        );
+      })
+      .catch((e) => {
+        var payload = [
+          {
+            type: "text",
+            text: "การชำระเงินไม่สมบูรณ์ ด้วยเหตุผลต่อไปนี้",
+          },
+          {
+            type: "text",
+            text: e,
+          },
+        ];
+        return lah.push(userId, payload);
+      });
+  }
+});
 
 app.post("/confirm-order", async function (req, res) {
-    if (typeof req.body.userID === "undefined") {
-      return res.send("You cancled the payment");
-    } else {
-      const transactionId = req.body.transactionId;
-      const userId = req.body.userID;
-      var pathUrl = `/v3/payments/${transactionId}/confirm`;
-      var body = {
-        amount: req.body.amount,
-        currency: "THB",
-      };
-      var header = genHeader(channelId, channelSecret, pathUrl, body, nonce);
-      return request({
-        uri: `${baseUrl}${pathUrl}`,
-        method: "POST",
-        headers: header,
-        body: JSON.stringify(body),
-      })
-        .then((data) => {
-          console.log("data=>", {
-            uri: `${baseUrl}${pathUrl}`,
-            method: "POST",
-            headers: header,
-            body: JSON.stringify(body),
-          });
-          var jsondata = JSON.parse(data);
-          if (jsondata.returnCode === "0000") {
-            var payload = [
-              {
-                type: "text",
-                text: "การชำระเงินเสร็จสมบูรณ์ ขอบคุณที่ใช้บริการ Dreamcatcher Store",
-              },
-              payloadcreator.receipt(data[0]),
-            ];
-            return lah.push(userId, payload);
-          } else {
-            var payload = [
-              {
-                type: "text",
-                text: "การชำระเงินไม่สมบูรณ์ ด้วยเหตุผลต่อไปนี้",
-              },
-              {
-                type: "text",
-                text: jsondata.returnMessage,
-              },
-            ];
-            return lah.push(userId, payload);
-          }
-        })
-        .then((data) => {
-          return res.send(
-            "Successfully to get the data from LINE Pay,Please return to LINE App to see the payment result"
-          );
-        })
-        .catch((e) => {
+  if (typeof req.body.userID === "undefined") {
+    return res.send("You cancled the payment");
+  } else {
+    const transactionId = req.body.transactionId;
+    const userId = req.body.userID;
+    var pathUrl = `/v3/payments/${transactionId}/confirm`;
+    var body = {
+      amount: req.body.amount,
+      currency: "THB",
+    };
+    var header = genHeader(channelId, channelSecret, pathUrl, body, nonce);
+    return request({
+      uri: `${baseUrl}${pathUrl}`,
+      method: "POST",
+      headers: header,
+      body: JSON.stringify(body),
+    })
+      .then((data) => {
+        console.log("data=>", {
+          uri: `${baseUrl}${pathUrl}`,
+          method: "POST",
+          headers: header,
+          body: JSON.stringify(body),
+        });
+        var jsondata = JSON.parse(data);
+        if (jsondata.returnCode === "0000") {
+          var payload = [
+            {
+              type: "text",
+              text:
+                "การชำระเงินเสร็จสมบูรณ์ ขอบคุณที่ใช้บริการ Dreamcatcher Store",
+            },
+            payloadcreator.receipt(data[0]),
+          ];
+          return lah.push(userId, payload);
+        } else {
           var payload = [
             {
               type: "text",
@@ -264,13 +247,32 @@ app.post("/confirm-order", async function (req, res) {
             },
             {
               type: "text",
-              text: e,
+              text: jsondata.returnMessage,
             },
           ];
           return lah.push(userId, payload);
-        });
-    }
-  });
+        }
+      })
+      .then((data) => {
+        return res.send(
+          "Successfully to get the data from LINE Pay,Please return to LINE App to see the payment result"
+        );
+      })
+      .catch((e) => {
+        var payload = [
+          {
+            type: "text",
+            text: "การชำระเงินไม่สมบูรณ์ ด้วยเหตุผลต่อไปนี้",
+          },
+          {
+            type: "text",
+            text: e,
+          },
+        ];
+        return lah.push(userId, payload);
+      });
+  }
+});
 
 app.get("/product-list", async function (req, res) {
   const data = [];
@@ -294,6 +296,104 @@ app.get("/product-list", async function (req, res) {
 });
 
 app.post("/create-order", async function (req, res) {
+  let array = req.data.products;
+  let content = [
+    {
+      type: "box",
+      layout: "horizontal",
+      contents: [
+        {
+          type: "image",
+          url:
+            "https://firebasestorage.googleapis.com/v0/b/linedeveloper-63341.appspot.com/o/180x180.png?alt=media&token=73c8ea72-b89d-4aa9-8ca8-7fda3dc4005c",
+        },
+        {
+          type: "box",
+          layout: "vertical",
+          contents: [
+            {
+              type: "text",
+              text: "Dreamcatcher Store",
+              wrap: true,
+              size: "xl",
+            },
+            {
+              type: "text",
+              text: "รายการสินค้า",
+            },
+          ],
+          paddingTop: "20px",
+        },
+      ],
+    },
+    {
+      type: "separator",
+      margin: "lg",
+    },
+  ];
+  for (let index = 0; index < array.length; index++) {
+    content.push({
+      type: "box",
+      layout: "vertical",
+      contents: [
+        {
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            {
+              type: "text",
+              text: "1) " + array[index].product_name,
+              size: "lg",
+              color: "#6e5dde",
+            },
+            {
+              type: "image",
+              url: array[index].product_img,
+            },
+          ],
+        },
+        {
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            {
+              type: "text",
+              text: "จำนวน: 1 ชิ้น",
+            },
+            {
+              type: "text",
+              text: `ราคาต่อชิ้น: ${array[index].product_price} ฿`,
+              align: "end",
+            },
+          ],
+          margin: "sm",
+        },
+        {
+          type: "text",
+          text: `รวม: ${array[index].product_price} ฿`,
+          align: "end",
+          size: "lg",
+          color: "#fc97a2",
+        },
+      ],
+      paddingTop: "10px",
+      paddingBottom: "10px",
+      paddingStart: "10px",
+      paddingEnd: "10px",
+    });
+  }
+  content.push({
+    type: "separator",
+    margin: "lg",
+  });
+  content.push({
+    type: "text",
+    text: `ราคารวม: ${req.body.amount} ฿`,
+    align: "end",
+    size: "xxl",
+    color: "#FF0000",
+    margin: "md",
+  });
   const pathUrl = "/v3/payments/request";
   let body = {
     amount: req.body.amount,
@@ -306,29 +406,22 @@ app.post("/create-order", async function (req, res) {
         name: "Dreamcatcher Package",
         products: [
           {
-            name: "ตุ๊กตา Cony",
+            name: "ตาข่ายดักฝันรุ่น 1",
             quantity: 1,
             price: 100,
             imageUrl:
-              "https://firebasestorage.googleapis.com/v0/b/linedeveloper-63341.appspot.com/o/512x512bb.jpg?alt=media&token=7cfd10b0-6d01-4612-b42e-b1b4d0105acd",
+              "https://firebasestorage.googleapis.com/v0/b/dowho-line-pay.appspot.com/o/watercolor-dreamcatcher-with-flowers_45050-130.jpg?alt=media",
           },
           {
-            name: "ตุ๊กตา Sally",
+            name: "ตาข่ายดักฝันรุ่นที่ 2",
             quantity: 1,
             price: 150,
             imageUrl:
-              "https://firebasestorage.googleapis.com/v0/b/linedeveloper-63341.appspot.com/o/8cd724371a6f169b977684fd69cc2339.jpg?alt=media&token=e2008ff7-1cad-4476-a2e4-cda5f8af6561",
+              "https://firebasestorage.googleapis.com/v0/b/dowho-line-pay.appspot.com/o/b6b7c0478ba187e57082991f2ba3ca01.png?alt=media",
           },
         ],
       },
     ],
-    redirectUrls: {
-      confirmUrl:
-        "https://0c1f44a56d0a.ngrok.io/dowho-line-pay/asia-east2/confirmOrder?userID=" +
-        req.body.userID,
-      cancelUrl:
-        "https://0c1f44a56d0a.ngrok.io/dowho-line-pay/asia-east2/confirmOrder",
-    },
   };
   var header = genHeader(channelId, channelSecret, pathUrl, body, nonce);
   return request({
@@ -340,15 +433,54 @@ app.post("/create-order", async function (req, res) {
     .then(async (data) => {
       await db
         .collection("orders")
-        .add({
+        .doc(UUID)
+        .set({
           amount: body.amount,
           currency: "THB",
           orderId: body.orderId,
           packages: body.packages,
-          status: "waiting",
+          userid: req.body.userId,
           create_at: Date.now(),
         })
         .then(async function () {
+          request({
+            headers: LINE_HEADER,
+            method: `POST`,
+            uri: LINE_MESSAGING_API,
+            body: JSON.stringify({
+              to: req.userId,
+              messages: [
+                {
+                  type: "flex",
+                  altText: "รายการสั่งซื้อของคุณ",
+                  contents: {
+                    type: "bubble",
+                    size: "giga",
+                    body: {
+                      type: "box",
+                      layout: "vertical",
+                      contents: content,
+                    },
+                    footer: {
+                      type: "box",
+                      layout: "vertical",
+                      contents: [
+                        {
+                          type: "button",
+                          action: {
+                            type: "postback",
+                            label: "ชำระด้วย Rabbit LINE Pay",
+                            data: "pay",
+                          },
+                          style: "primary",
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+            }),
+          });
           await res.status(200).json({
             data: data,
             status: "success",
